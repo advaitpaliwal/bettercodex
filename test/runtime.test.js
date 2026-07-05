@@ -48,9 +48,17 @@ test("writeRuntimeFiles emits syntax-valid runtime files", () => {
   assert.equal(renderer.includes("test(button.className"), false);
   assert.equal(renderer.includes("localThemeNames"), true);
   assert.equal(renderer.includes("!localThemeNames.has(name)"), true);
+  assert.equal(renderer.includes("openOnLaunch"), true);
+  assert.equal(renderer.includes("runtime.launchOpened"), true);
+  assert.equal(renderer.includes("api.Accounts"), true);
 
   const main = fs.readFileSync(runtime.loaderPath, "utf8");
   assert.equal(main.includes("Only plugins and themes install into the desktop client"), true);
+  assert.equal(main.includes("bettercodex:listAccounts"), true);
+  assert.equal(main.includes("auth-backups"), true);
+
+  const preload = fs.readFileSync(runtime.preloadPath, "utf8");
+  assert.equal(preload.includes("listAccounts"), true);
 
   const config = JSON.parse(fs.readFileSync(runtime.configPath, "utf8"));
   assert.equal(config.catalogEndpoint, "https://catalog.example.test/api/addons");

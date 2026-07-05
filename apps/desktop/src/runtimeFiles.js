@@ -396,6 +396,8 @@ function mainRuntimeSource() {
 
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
+const os = require("node:os");
 const Module = require("node:module");
 
 const runtimeDir = __dirname;
@@ -404,6 +406,8 @@ config.catalogEndpoint = config.catalogEndpoint || config.storeEndpoint;
 const rendererPath = path.join(runtimeDir, "renderer.cjs");
 const preloadPath = path.join(runtimeDir, "preload.cjs");
 const statePath = path.join(config.dataDir, "addons.json");
+const accountsPath = path.join(config.dataDir, "accounts.json");
+const authBackupsDir = path.join(config.dataDir, "auth-backups");
 
 for (const dir of [config.dataDir, config.pluginDir, config.themeDir]) {
   try { fs.mkdirSync(dir, {recursive: true}); } catch (error) { /* ignore */ }
@@ -482,6 +486,137 @@ function registerIpc(ipcMain, shell) {
   ipcMain.handle("bettercodex:runPlugin", (event, fileName, pluginName) => runPlugin(event.sender, fileName, pluginName));
   ipcMain.handle("bettercodex:setEnabled", (event, name, enabled) => setEnabled(name, enabled));
   ipcMain.handle("bettercodex:openFolder", (event, kind) => shell.openPath(kind === "theme" ? config.themeDir : config.pluginDir));
+  ipcMain.handle("bettercodex:listAccounts", () => listAccounts());
+  ipcMain.handle("bettercodex:importCurrentAccount", (event, name) => importCurrentAccount(name));
+  ipcMain.handle("bettercodex:switchAccount", (event, accountId) => switchAccount(accountId));
+  ipcMain.handle("bettercodex:renameAccount", (event, accountId, name) => renameAccount(accountId, name));
+  ipcMain.handle("bettercodex:deleteAccount", (event, accountId) => deleteAccount(accountId));
+}
+
+function getCodexHome() {
+  return process.env.CODEX_HOME ? path.resolve(process.env.CODEX_HOME) : path.join(os.homedir(), ".codex");
+}
+
+function getAuthJsonPath() {
+  return path.join(getCodexHome(), "auth.json");
+}
+
+function readJson(filePath, fallback) {
+  try { return JSON.parse(fs.readFileSync(filePath, "utf8")); } catch (error) { return fallback; }
+}
+
+function writePrivateJson(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), {recursive: true});
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + "\n", "utf8");
+  try { fs.chmodSync(filePath, 0o600); } catch (error) { /* ignore */ }
+}
+
+function readAccountStore() {
+  const store = readJson(accountsPath, {accounts: [], activeAccountId: null});
+  return {
+    accounts: Array.isArray(store.accounts) ? store.accounts : [],
+    activeAccountId: store.activeAccountId || null,
+  };
+}
+
+function writeAccountStore(store) {
+  writePrivateJson(accountsPath, {
+    accounts: Array.isArray(store.accounts) ? store.accounts : [],
+    activeAccountId: store.activeAccountId || null,
+  });
+}
+
+function publicAccount(account, activeAccountId) {
+  return {
+    id: account.id,
+    name: account.name,
+    authMode: account.authMode || "unknown",
+    importedAt: account.importedAt || null,
+    updatedAt: account.updatedAt || null,
+    active: account.id === activeAccountId,
+  };
+}
+
+function classifyAuth(auth) {
+  if (auth && auth.OPENAI_API_KEY) return "api-key";
+  if (auth && auth.tokens) return "chatgpt-oauth";
+  return "unknown";
+}
+
+function assertAuthJson(auth) {
+  if (!auth || typeof auth !== "object" || Array.isArray(auth)) throw new Error("auth.json must be a JSON object");
+  if (!auth.OPENAI_API_KEY && !auth.tokens) throw new Error("auth.json does not contain a Codex API key or OAuth tokens");
+}
+
+function listAccounts() {
+  const store = readAccountStore();
+  return {
+    codexHome: getCodexHome(),
+    authJsonPath: getAuthJsonPath(),
+    accounts: store.accounts.map((account) => publicAccount(account, store.activeAccountId)),
+  };
+}
+
+function importCurrentAccount(name) {
+  const authPath = getAuthJsonPath();
+  const auth = readJson(authPath, null);
+  assertAuthJson(auth);
+  const now = new Date().toISOString();
+  const store = readAccountStore();
+  const account = {
+    id: crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString("hex"),
+    name: String(name || "").trim() || "Codex Account " + String(store.accounts.length + 1),
+    authMode: classifyAuth(auth),
+    auth,
+    importedAt: now,
+    updatedAt: now,
+  };
+  store.accounts.push(account);
+  store.activeAccountId = account.id;
+  writeAccountStore(store);
+  return listAccounts();
+}
+
+function switchAccount(accountId) {
+  const store = readAccountStore();
+  const account = store.accounts.find((item) => item.id === accountId);
+  if (!account) throw new Error("Account not found");
+  assertAuthJson(account.auth);
+  const authPath = getAuthJsonPath();
+  fs.mkdirSync(path.dirname(authPath), {recursive: true});
+  const current = fs.existsSync(authPath) ? fs.readFileSync(authPath, "utf8") : null;
+  if (current) {
+    fs.mkdirSync(authBackupsDir, {recursive: true});
+    const backupName = "auth-" + new Date().toISOString().replace(/[:.]/g, "-") + ".json";
+    fs.writeFileSync(path.join(authBackupsDir, backupName), current, "utf8");
+  }
+  writePrivateJson(authPath, account.auth);
+  store.activeAccountId = account.id;
+  account.updatedAt = new Date().toISOString();
+  writeAccountStore(store);
+  return listAccounts();
+}
+
+function renameAccount(accountId, name) {
+  const nextName = String(name || "").trim();
+  if (!nextName) throw new Error("Account name is required");
+  const store = readAccountStore();
+  const account = store.accounts.find((item) => item.id === accountId);
+  if (!account) throw new Error("Account not found");
+  account.name = nextName;
+  account.updatedAt = new Date().toISOString();
+  writeAccountStore(store);
+  return listAccounts();
+}
+
+function deleteAccount(accountId) {
+  const store = readAccountStore();
+  const nextAccounts = store.accounts.filter((item) => item.id !== accountId);
+  if (nextAccounts.length === store.accounts.length) throw new Error("Account not found");
+  store.accounts = nextAccounts;
+  if (store.activeAccountId === accountId) store.activeAccountId = null;
+  writeAccountStore(store);
+  return listAccounts();
 }
 
 async function fetchCatalog() {
@@ -674,6 +809,11 @@ try {
     runPlugin: (fileName, pluginName) => ipcRenderer.invoke("bettercodex:runPlugin", fileName, pluginName),
     setEnabled: (name, enabled) => ipcRenderer.invoke("bettercodex:setEnabled", name, enabled),
     openFolder: (kind) => ipcRenderer.invoke("bettercodex:openFolder", kind),
+    listAccounts: () => ipcRenderer.invoke("bettercodex:listAccounts"),
+    importCurrentAccount: (name) => ipcRenderer.invoke("bettercodex:importCurrentAccount", name),
+    switchAccount: (accountId) => ipcRenderer.invoke("bettercodex:switchAccount", accountId),
+    renameAccount: (accountId, name) => ipcRenderer.invoke("bettercodex:renameAccount", accountId, name),
+    deleteAccount: (accountId) => ipcRenderer.invoke("bettercodex:deleteAccount", accountId),
   });
 } catch (error) {
   // contextBridge throws if this frame lacks context isolation; safe to ignore.
@@ -708,6 +848,7 @@ function rendererRuntimeSource() {
     try { bindHostNavigationTeardown(); } catch (error) { /* non-fatal */ }
     try { ensureSidebarItem(); } catch (error) { /* non-fatal */ }
     try { await renderCurrent(); } catch (error) { /* pre-render community content so the page opens instantly */ }
+    try { openOnLaunch(); } catch (error) { /* non-fatal */ }
   }
 
   // The main Codex page surface. BetterCodex claims the whole surface while open so native
@@ -932,6 +1073,25 @@ function rendererRuntimeSource() {
       if (tries <= 20) setTimeout(tick, 700);
     };
     tick();
+  }
+
+  function openOnLaunch() {
+    if (runtime.launchOpenScheduled) return;
+    runtime.launchOpenScheduled = true;
+    let tries = 0;
+    const tick = () => {
+      if (runtime.launchOpened || runtime.panel?.classList.contains("bettercodex-open")) return;
+      tries += 1;
+      mountPanel();
+      mountSidebarItem();
+      if (runtime.panel && document.getElementById("bettercodex-nav-item") && findContentEl()) {
+        runtime.launchOpened = true;
+        openPanel();
+        return;
+      }
+      if (tries < 100) window.setTimeout(tick, 100);
+    };
+    window.setTimeout(tick, 0);
   }
 
   // Codex re-renders its sidebar (React); re-add our item whenever it disappears.
@@ -1394,6 +1554,13 @@ function rendererRuntimeSource() {
         Themes: {
           getAll: () => runtime.addons.themes,
         },
+        Accounts: {
+          list: () => native.listAccounts(),
+          importCurrent: (name) => native.importCurrentAccount(name),
+          switch: (accountId) => native.switchAccount(accountId),
+          rename: (accountId, name) => native.renameAccount(accountId, name),
+          delete: (accountId) => native.deleteAccount(accountId),
+        },
         UI: {
           showToast,
         },
@@ -1408,6 +1575,7 @@ function rendererRuntimeSource() {
     };
     api.Plugins = api("BetterCodex").Plugins;
     api.Themes = api("BetterCodex").Themes;
+    api.Accounts = api("BetterCodex").Accounts;
     api.UI = api("BetterCodex").UI;
     return api;
 
