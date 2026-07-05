@@ -958,6 +958,10 @@ function rendererRuntimeSource() {
         console.error("[BetterCodex] theme failed:", theme.name, error && error.message);
       }
     }
+    const localThemeNames = new Set(runtime.addons.themes.map((theme) => theme.name));
+    for (const name of Array.from(runtime.styles.keys())) {
+      if (!localThemeNames.has(name)) removeStyle(name);
+    }
     for (const plugin of runtime.addons.plugins) {
       try {
         if (plugin.enabled && !runtime.plugins.has(plugin.name)) {

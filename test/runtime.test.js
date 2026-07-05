@@ -46,6 +46,8 @@ test("writeRuntimeFiles emits syntax-valid runtime files", () => {
   assert.equal(renderer.includes("closest(\"nav, [role='navigation']\")"), true);
   assert.equal(renderer.includes("clientX <= leftBoundary"), false);
   assert.equal(renderer.includes("test(button.className"), false);
+  assert.equal(renderer.includes("localThemeNames"), true);
+  assert.equal(renderer.includes("!localThemeNames.has(name)"), true);
 
   const main = fs.readFileSync(runtime.loaderPath, "utf8");
   assert.equal(main.includes("Only plugins and themes install into the desktop client"), true);
