@@ -37,7 +37,7 @@ test("submission validation rejects standalone skills", () => {
   assert.throws(() => validateSubmission({
     author: "Companion",
     description: "Standalone skills ship through Codex-native plugin bundles.",
-    downloadUrl: "https://raw.githubusercontent.com/companion-inc/bettercodex-plugins/main/skills/example.skill.json",
+    downloadUrl: "https://raw.githubusercontent.com/advaitpaliwal/bettercodex-plugins/main/skills/example.skill.json",
     fileName: "example.skill.json",
     name: "Example Skill",
     type: "skill",

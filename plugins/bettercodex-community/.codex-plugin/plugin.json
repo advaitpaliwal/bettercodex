@@ -5,10 +5,10 @@
   "author": {
     "name": "Companion",
     "email": "bettercodex@companion.ai",
-    "url": "https://github.com/companion-inc"
+    "url": "https://github.com/advaitpaliwal"
   },
-  "homepage": "https://github.com/companion-inc/bettercodex",
-  "repository": "https://github.com/companion-inc/bettercodex",
+  "homepage": "https://github.com/advaitpaliwal/bettercodex",
+  "repository": "https://github.com/advaitpaliwal/bettercodex",
   "license": "MIT",
   "keywords": ["bettercodex", "codex", "store", "mods", "skills"],
   "skills": "./skills/",
@@ -19,9 +19,9 @@
     "developerName": "Companion",
     "category": "Productivity",
     "capabilities": ["Write", "Interactive"],
-    "websiteURL": "https://github.com/companion-inc/bettercodex",
-    "privacyPolicyURL": "https://github.com/companion-inc/bettercodex",
-    "termsOfServiceURL": "https://github.com/companion-inc/bettercodex",
+    "websiteURL": "https://github.com/advaitpaliwal/bettercodex",
+    "privacyPolicyURL": "https://github.com/advaitpaliwal/bettercodex",
+    "termsOfServiceURL": "https://github.com/advaitpaliwal/bettercodex",
     "defaultPrompt": [
       "Create a BetterCodex plugin",
       "Create a BetterCodex theme",

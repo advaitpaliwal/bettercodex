@@ -68,7 +68,7 @@ https://bettercodex-web.companion-inc.workers.dev/api/addons
 The repo also contains `bettercodex-community`, a Codex-native plugin that exposes skills for creating BetterCodex plugins/themes and packaging Codex skills inside Codex-native plugin bundles:
 
 ```bash
-codex plugin marketplace add companion-inc/bettercodex --ref main
+codex plugin marketplace add advaitpaliwal/bettercodex --ref main
 codex plugin add bettercodex-community@bettercodex
 ```
 

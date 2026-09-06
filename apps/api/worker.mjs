@@ -3,7 +3,7 @@ import {validateSubmission} from "../../packages/catalog/src/index.mjs";
 // The marketplace is community-owned: its contents come from the bettercodex-plugins
 // repo, where authors add plugins via pull request. We read its generated catalog.json.
 const COMMUNITY_CATALOG_URL =
-  "https://raw.githubusercontent.com/companion-inc/bettercodex-plugins/main/catalog.json";
+  "https://raw.githubusercontent.com/advaitpaliwal/bettercodex-plugins/main/catalog.json";
 
 async function fetchCommunityCatalog() {
   try {
@@ -106,7 +106,7 @@ async function handleSubmission(request, env) {
 }
 
 async function createSubmissionIssue(env, submission) {
-  const repo = env.GITHUB_REPO || "companion-inc/bettercodex-plugins";
+  const repo = env.GITHUB_REPO || "advaitpaliwal/bettercodex-plugins";
   const response = await fetch(`https://api.github.com/repos/${repo}/issues`, {
     method: "POST",
     headers: {
