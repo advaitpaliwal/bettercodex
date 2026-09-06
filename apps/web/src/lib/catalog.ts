@@ -38,9 +38,9 @@ function onlyRuntimeAddons(list: unknown[]): Addon[] {
   return (list as Addon[]).filter((addon) => addon.type === "plugin" || addon.type === "theme");
 }
 
-export const REPO_URL = "https://github.com/companion-inc/bettercodex";
-export const COMMUNITY_REPO_URL = "https://github.com/companion-inc/bettercodex-plugins";
-export const DOCS_URL = "https://github.com/companion-inc/bettercodex-plugins/tree/main/docs";
+export const REPO_URL = "https://github.com/advaitpaliwal/bettercodex";
+export const COMMUNITY_REPO_URL = "https://github.com/advaitpaliwal/bettercodex-plugins";
+export const DOCS_URL = "https://github.com/advaitpaliwal/bettercodex-plugins/tree/main/docs";
 // Submitting a plugin is a pull request to the community plugins repo, not an issue.
 export const SUBMIT_URL =
-  "https://github.com/companion-inc/bettercodex-plugins/blob/main/CONTRIBUTING.md";
+  "https://github.com/advaitpaliwal/bettercodex-plugins/blob/main/CONTRIBUTING.md";

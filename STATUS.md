@@ -124,3 +124,10 @@ Current marketplace architecture update:
 - 2026-07-05 startup-route fix: BetterCodex now claims the Codex main content surface on launch, so opening `/Applications/BetterCodex.app` shows the BetterCodex Plugins page instead of a restored previous Codex chat such as a PostHog thread.
 - 2026-07-05 Account Switcher implementation: desktop runtime exposes `BdApi.Accounts` to plugins with `list`, `importCurrent`, `switch`, `rename`, and `delete`. Profiles are stored in BetterCodex private app data; switching writes the selected profile to Codex's `~/.codex/auth.json` and first backs up the previous auth file under BetterCodex app data.
 - 2026-07-05 community registry `companion-inc/bettercodex-plugins` commit `813a105` added installable Marketplace plugin `Account Switcher`; live API `https://bettercodex-web.companion-inc.workers.dev/api/addons` returned `account-switcher` with raw download `addons/plugins/account-switcher/account-switcher.plugin.js`.
+
+## 2026-09-06 — personal source references (review candidate)
+
+- Existing source/catalog discovery now targets `advaitpaliwal/bettercodex` and `advaitpaliwal/bettercodex-plugins`: API catalog/issue defaults, Worker configuration, website links, native plugin links, and README marketplace command.
+- Verified locally: `npm run check`, focused catalog/Worker tests (8/8), full tests (26/26), and `npm run web:build`. Worker catalog regression now mocks the network and asserts the exact personal URL plus skill filtering rather than accepting an empty fallback response.
+- Preserved company-hosted Worker URL, bundle/repair identities, local data/credential paths, private npm manifests, and historical receipts above. No app installation, hosted deployment, npm publication, or credential operation.
+- Next: review/merge both registry and consumer PRs; deploy/verify the existing Worker separately with authorization. The local web build is not live deployment proof.
